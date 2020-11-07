@@ -1,0 +1,30 @@
+﻿# gitignore for SEVM_RLO
+
+# Temp files
+*~
+
+#git merge files
+*.orig
+
+# Service files
+*.3
+*.axf
+*.bak
+*.crf
+*.d
+*.dep
+*.hex
+*.htm
+*.iex
+*.ini
+*.lnp
+*.lst
+*.map
+*.o
+*.saved_uv4
+*.suskov_ea
+*.User
+*.uvopt
+*.uvoptx
+
+
