@@ -14,10 +14,10 @@
 #define START_wrSD_ADC		3 //flash (microSD card)
 #define START_rdSD_ADC		4 //flash (microSD card)
 #define STOP_SD						5
-#define Power_SD_On				6
-#define Power_SD_Off			7
-#define RESET_WR_SD				8
-#define RESET_RD_SD				9
+#define Power_SD_On				0x33
+#define Power_SD_Off			0x34
+#define RESET_WR_SD				0x38
+#define RESET_RD_SD				0x39
 
 //----------------------------------------------------------------------------------
 

@@ -517,6 +517,16 @@
               <FileType>1</FileType>
               <FilePath>..\..\SDIO_SD\stm32f4xx_sdio.c</FilePath>
             </File>
+            <File>
+              <FileName>sd_streamer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\SDIO_SD\sd_streamer.c</FilePath>
+            </File>
+            <File>
+              <FileName>sd_stream_cntrl.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\SDIO_SD\sd_stream_cntrl.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

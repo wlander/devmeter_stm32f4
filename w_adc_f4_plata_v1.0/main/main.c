@@ -6,10 +6,11 @@
 #include "stm32f4xx_dma.h"
 #include "stm32f4xx_usart.h"
 #include "stm32f4xx_sdio.h"
-
+#include "sd_streamer.h"
 #include "adc_module_def.h"
 #include "conf_init.h"
 #include "stm32f4_discovery_sdio_sd.h"
+#include  "sd_stream_cntrl.h"
 
 //#include "sdio_sd.h"
 //#include "diskio.h"
@@ -132,28 +133,26 @@ uint32_t cnt2 = 0;
 uint32_t cnt3 = 0;
 
 void DMA2_Stream0_IRQHandler( void ){
-
-uint16_t* ptr_tmp;
-
+	uint16_t* ptr_tmp;	
+	
 	if(DMA_GetITStatus(DMA2_Stream0,DMA_IT_TCIF0)){
 	   DMA_ClearITPendingBit(DMA2_Stream0, DMA_IT_TCIF0);
   }
-
 	
 	ptr_tmp = ptr_buf_recv;
 	ptr_buf_recv = ptr_buf_obr;
 	ptr_buf_obr = ptr_tmp;
 
 	if(cnt_block_write<=NUM_BLOCKS_FIFO){
-		decim_adc_data(ptr_buf_obr, block_fifo_ptr+num_block_fif0_write*BLOCK_SIZE, K_Decim, Num_Ch);
-		cnt_block_write++;
-		num_block_fif0_write++;
-		if(num_block_fif0_write==NUM_BLOCKS_FIFO) num_block_fif0_write = 0;
+			decim_adc_data(ptr_buf_obr, block_fifo_ptr+num_block_fif0_write*BLOCK_SIZE, K_Decim, Num_Ch);
+			cnt_block_write++;
+			num_block_fif0_write++;
+			if(num_block_fif0_write==NUM_BLOCKS_FIFO) num_block_fif0_write = 0;
 	}
 	else{
-		block_fifo_status = 1;
+			block_fifo_status = 1;
 	}
-	
+								
 	cnt_recv++;
 	f_adc_complete = 1;	
 	adc_recv_end++;
@@ -199,7 +198,8 @@ uint32_t i = 0;
 uint8_t St = 0;		
 uint16_t* ptmp;	
 uint32_t* ptr_h2;		
-	
+uint16_t* ptr_tmp;
+
 //----- TEST PACK ADC DATA---------------------------------------------------------
 /*
 for(i=0;i<2048;i++) buf1[i] = ((i)<<2);
@@ -235,7 +235,7 @@ NVIC_Configuration();
 
 //SizeByte = 	(BUF_ADC_LEN_CH/K_DECIM_DEF*2*2*8)/10; //BUF_ADC_LEN_CH*Num_Ch/K_DECIM_DEF*2;
 
-//!!!USART1_init((uint32_t*)ptr_buf_transm, SizeByte);
+USART1_init((uint32_t*)ptr_buf_transm, SizeByte);
 //USART1_dma_init((uint32_t*)ptr_buf_transm, SizeByte);
 
 __enable_irq();
@@ -246,44 +246,94 @@ __enable_irq();
 //while(1){};
 	
 //------------ END INIT ----------------------------------------------
+ St = 0;
+ 
+ while(1){ //waiting start command after reset device - "start write sd" or "reset data sd"
+		
+//		St = ask_sd_ctr_btn(); //ask button start or reset
+		
+		if((New_Conf_byte!=Conf_byte) && (St==0)){ //ask uart0 start or reset
+			Obrab_Conf_byte();
+			if(Conf_byte == Power_SD_On) St=1;
+			else if(Conf_byte == RESET_WR_SD) St=2;	
+		}
+		
+		if(St==2){ //if reset
+			N_block_rec_flash = 0;
+			cnt_file_write_flash = 0;		
+			SD_Write_Data_Info_Sector0(); //write reset data information in sd-card sector0
+			fl_start_write_flash = 1;
+			break;		
+		}	
+		else if(St==1){ //if start 				
+			SD_Read_Data_Info_Sector0();	//read last data information in sd-card sector0
+			fl_start_write_flash = 1;
+			break;		
+		}
+		
+	}
+	
+	
 	
   while(1){
 	
-		if(((UART_txMode == 1)) && (cnt_block_write!=0)){
+			if(f_adc_complete){							
+					f_adc_complete = 0;
+					cnt_obr++;
+					adc_recv_end--;					
+			}
+		
+			if(((UART_txMode > 0)) && (cnt_block_read == 0) && (N_block_rec_flash_tmp == N_block_rec_flash)){	//if starting new file
+					fl_start_write_flash = 1;
+			}		
 			
-				GPIO_ResetBits(GPIOA, GPIO_Pin_1);
-			
-				St = SDIO_SD_SingleBlock_Rec((uint8_t*)(block_fifo_ptr+num_block_fif0_read*BLOCK_SIZE), NUM_SECTORS_SD_WRITE);
-			
-				//pack16_adc_data_2ch(tmp_buf, (uint8_t*)ptr_buf_prepare);
-				//Cycle_UART_tx((uint8_t*)ptr_buf_transm, (BUF_ADC_LEN_CH/K_DECIM_DEF)*2);				
-			
-				num_block_fif0_read++;
-				if(num_block_fif0_read==NUM_BLOCKS_FIFO) num_block_fif0_read = 0;
-				cnt_block_write--;
-				cnt_block_read++;
-			
-				GPIO_SetBits(GPIOA, GPIO_Pin_1);
+			if(((UART_txMode > 0)) && (cnt_block_write != 0)){	
+
+					if(cnt_blink==PERIOD_BLINK) GPIO_SetBits(GPIOA, GPIO_Pin_1);
+					
+					St = SDIO_SD_SingleBlock_Rec((uint8_t*)(block_fifo_ptr+num_block_fif0_read*BLOCK_SIZE), NUM_SECTORS_SD_WRITE);		
+					
+					if(cnt_blink==PERIOD_BLINK/2) GPIO_ResetBits(GPIOA, GPIO_Pin_1);
+					
+					if(cnt_blink==PERIOD_BLINK) cnt_blink = 0;
+					cnt_blink++;
+					
+					cnt_sector++;
+					if(cnt_sector==NUM_REFRESH_SD_INFO){
+						cnt_sector = 0;
+						SD_Write_Data_Info_Sector0();
+					}		
+					
+					Cycle_UART_tx((uint8_t*)ptr_buf_transm, 4000/*SizeByte*/);
+					
+					num_block_fif0_read++;
+					if(num_block_fif0_read==NUM_BLOCKS_FIFO) num_block_fif0_read = 0;
+					cnt_block_write--;
+					cnt_block_read++;	
+					
+					cntr_sd.cnt_status_write = N_block_rec_flash;
+					cntr_sd.cnt_file_sd = cnt_file_write_flash;
+					Cycle_UART_tx((uint8_t*)&cntr_sd, 8);
 						
+		}
+		else if(((UART_txMode == 0)) && (N_block_rec_flash_tmp != N_block_rec_flash)){ //if stop writing current file
+			
+				N_block_rec_flash_tmp = N_block_rec_flash;
+				SD_Write_Data_Info_Sector0();
+				cnt_block_read = 0;
+			
 		}
 
 		
-		if(f_adc_complete){
-			 
-			 f_adc_complete = 0;
-			
-			 if(f_run_dwt==0) dwt_cnt_run();
-			 else cycle_buf_time_dwt();	
-			 
-			 cnt_obr++;
-			 adc_recv_end--;				
-		}
-
+		St = ack_cnt_bttn();
+		
+		if(St==1)	New_Conf_byte = START_txUART_ADC;
+		else if(St==2) New_Conf_byte = STOP_txUART_ADC;
 		
 		if(New_Conf_byte!=Conf_byte){
 			Obrab_Conf_byte();
 		}
-			
+	
 		cnt_globe_cycle++;	
 
 		//if(cnt_globe_cycle>1000) 	UART_txMode = 1;
