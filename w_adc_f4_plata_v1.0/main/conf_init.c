@@ -70,8 +70,24 @@ void GPIO_init_all(void){
   GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
   GPIO_Init(GPIOA, &GPIO_InitStructure);
+	
+	//status led of control button
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-	GPIO_SetBits(GPIOA, GPIO_Pin_1);	 
+	//control button 1
+  GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_6;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+	
+	//control button 2	
+  GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);	
+
+	GPIO_ResetBits(GPIOA, GPIO_Pin_4);	
+//	GPIO_SetBits(GPIOA, GPIO_Pin_1);	 
 	    
 }
 

@@ -3,9 +3,14 @@
 
 #include "stm32f4xx.h"
 
+#define EN_CNTRL_BUTTON
 
 #define NUM_REFRESH_SD_INFO 200
 #define PERIOD_BLINK 20
+
+#define BLINK_CNTRL_PIN GPIO_Pin_4
+#define BTN1_CNTRL_PIN GPIO_Pin_6
+#define BTN2_CNTRL_PIN GPIO_Pin_7
 
 uint8_t ask_sd_ctr_btn();
 uint8_t ack_cnt_bttn();

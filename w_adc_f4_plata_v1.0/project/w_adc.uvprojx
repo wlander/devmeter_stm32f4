@@ -369,7 +369,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F4XX</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Project;..\..\CMSIS;..\..\SPL;..\main;..\..\SDIO_SD</IncludePath>
+              <IncludePath>..\Project;..\..\CMSIS;..\..\SPL;..\main;..\..\SDIO_SD;..\..\ESP</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -526,6 +526,21 @@
               <FileName>sd_stream_cntrl.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\SDIO_SD\sd_stream_cntrl.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>ESP</GroupName>
+          <Files>
+            <File>
+              <FileName>esp_lib.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\ESP\esp_lib.c</FilePath>
+            </File>
+            <File>
+              <FileName>esp_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\ESP\esp_uart.c</FilePath>
             </File>
           </Files>
         </Group>

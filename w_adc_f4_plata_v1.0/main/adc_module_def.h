@@ -3,22 +3,19 @@
 
 //--------- DEFINE for RECV UART bluetooth conf byte -------------------------------
 
-
 //--------- DEFINE Conf ADC data (conf byte) ---------------------------------------
 #define START_txUART_ADC	0x31 //bluetooth
 #define STOP_txUART_ADC		0x30
+
 #define	TEST_txUART_cnt		2
 
-
 //----------------------------------------------------------------------------------
-#define START_wrSD_ADC		3 //flash (microSD card)
-#define START_rdSD_ADC		4 //flash (microSD card)
-#define STOP_SD						5
-#define Power_SD_On				0x33
-#define Power_SD_Off			0x34
-#define RESET_WR_SD				0x38
-#define RESET_RD_SD				0x39
-
+#define  Power_SD_On				0x33
+#define  RESET_WR_SD				0x38
+#define  Conf_Byte_data_On 	0x34
+#define  Conf_Byte_data_Off 0x35
+#define  Conf_Byte_sig_On 	0x36
+#define  Conf_Byte_sig_Off 	0x37
 //----------------------------------------------------------------------------------
 
 #define START_txUSB_ADC		10 //usb
@@ -92,10 +89,12 @@
 #define BLOCK_SIZE 						(BUF_ADC_LEN_CH*N_CHANNEL_TX/K_DECIM_DEF)
 #define NUM_SECTORS_SD_WRITE 	((BLOCK_SIZE*2)/512)
 #define NUM_BLOCKS_FIFO 		10
-
+#define BUF_UART_SIZE				2000 //(int16)
 //------------- CODE DEBUG DEF -----------------------------------------------------
 //#define SPI_SD_DEBUG
 //----------------------------------------------------------------------------------
+
+#define TEST_ESP
 
 //PS: Calc ADC Sampling: ((((HCLK/2)/APB2 Prescaler)/ADC_Prescaler_Div)/(ADC_SampleTime+12))/K_DECIM_DEF = 0,00426829268292682926829268292683 
 

@@ -8,15 +8,16 @@
 #define SD_OPERATION_BLOCK          1
 #define SD_OPERATION_MULTI_BLOCK    2 
 #define SD_OPERATION_END            3
+#define SIZE_DATA_CDG 							32
 
 typedef struct
 {	
 	uint32_t cnt_status_write;	
 	uint32_t cnt_file_sd;
 	uint32_t cnt_status_write_all;
-	uint32_t stat;
+	uint8_t stat[4];
 	
-	uint32_t data[32];
+	uint16_t data[SIZE_DATA_CDG];
 	
 }cdg_cntrl_sd;
 

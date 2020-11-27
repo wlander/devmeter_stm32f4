@@ -30,6 +30,7 @@ void pack8_adc_data_2ch(uint16_t* ptr_adc_data, uint8_t* ptr_out);
 void pack16_adc_data_2ch(uint16_t* ptr_adc_data, uint8_t* ptr_out);
 //------------ Global -------------------------------------------
 uint8_t UART_txMode = 0;
+uint8_t UART_Tr_En = 0;
 uint8_t Pack_Mode = 0;
 uint8_t Pack_Mode_Ch = 0;
 uint8_t WindowMode = 0;
@@ -63,7 +64,8 @@ uint16_t Norm_Ch[3]  = {2040,2040,0}; //{2038,2038,2038};
 
 //--------------- For Send Data ------------------------------------/
 uint16_t buf1[BLOCK_SIZE*NUM_BLOCKS_FIFO+32];  
-uint16_t buf2[32];//[BUF_ADC_LEN_CH*N_CHANNEL_TX/K_DECIM_DEF+32]; 
+uint16_t buf_uart[BUF_UART_SIZE];//[BUF_ADC_LEN_CH*N_CHANNEL_TX/K_DECIM_DEF+32]; 
+uint16_t cnt_uart_send = 0;
 
 uint8_t num_block_fif0_write = 0;
 uint8_t num_block_fif0_read = 0;
@@ -75,14 +77,11 @@ uint8_t block_fifo_status = 0;
 uint16_t tmp_buf[32]; //[BUF_ADC_LEN_CH*N_CHANNEL_TX/K_DECIM_DEF]; 
 
 uint16_t* ptr_buf_transm = buf1;
-uint16_t* ptr_buf_prepare = buf2;
 //-------------------------------------------------------------------/
 
 //-------------------------------------------------------------------
 uint8_t Conf_byte = 0;
 uint8_t New_Conf_byte = 0;
-
-uint32_t cnt_uart_send = 0;
 uint32_t cnt_rcv_usart1 = 0;
 
 uint32_t cnt_pr_uart = 0;
@@ -240,6 +239,15 @@ USART1_init((uint32_t*)ptr_buf_transm, SizeByte);
 
 __enable_irq();
 
+
+#ifdef TEST_ESP
+
+	esp_unit_test1();
+
+#endif
+
+
+
 //Set_ADC_SampleTime(ADC_Fd);		
 //ADC_triple_dma_run();		
 
@@ -249,9 +257,11 @@ __enable_irq();
  St = 0;
  
  while(1){ //waiting start command after reset device - "start write sd" or "reset data sd"
-		
-//		St = ask_sd_ctr_btn(); //ask button start or reset
-		
+
+#ifdef EN_CNTRL_BUTTON	
+		St = ask_sd_ctr_btn(); //ask button start or reset
+#endif
+	 
 		if((New_Conf_byte!=Conf_byte) && (St==0)){ //ask uart0 start or reset
 			Obrab_Conf_byte();
 			if(Conf_byte == Power_SD_On) St=1;
@@ -272,8 +282,18 @@ __enable_irq();
 		}
 		
 	}
+ 
+	St = 0; //reset status control	
+	UART_Tr_En = 1;
 	
+	if(UART_Tr_En){
+				
+			cntr_sd.cnt_status_write = N_block_rec_flash;
+			cntr_sd.cnt_file_sd = cnt_file_write_flash;	
+			cntr_sd.stat[0] = 1;		
+			if(UART_Tr_En) Cycle_UART_tx((uint8_t*)&cntr_sd, 16+SIZE_DATA_CDG*2);		
 	
+	}
 	
   while(1){
 	
@@ -285,15 +305,20 @@ __enable_irq();
 		
 			if(((UART_txMode > 0)) && (cnt_block_read == 0) && (N_block_rec_flash_tmp == N_block_rec_flash)){	//if starting new file
 					fl_start_write_flash = 1;
+				
+					cntr_sd.cnt_status_write = N_block_rec_flash;
+					cntr_sd.cnt_file_sd = cnt_file_write_flash;
+					cntr_sd.stat[0] = 2;					
+					if(UART_Tr_En) Cycle_UART_tx((uint8_t*)&cntr_sd, 16+SIZE_DATA_CDG*2);					
 			}		
 			
 			if(((UART_txMode > 0)) && (cnt_block_write != 0)){	
 
-					if(cnt_blink==PERIOD_BLINK) GPIO_SetBits(GPIOA, GPIO_Pin_1);
+					if(cnt_blink==PERIOD_BLINK) GPIO_SetBits(GPIOA, BLINK_CNTRL_PIN);
 					
 					St = SDIO_SD_SingleBlock_Rec((uint8_t*)(block_fifo_ptr+num_block_fif0_read*BLOCK_SIZE), NUM_SECTORS_SD_WRITE);		
 					
-					if(cnt_blink==PERIOD_BLINK/2) GPIO_ResetBits(GPIOA, GPIO_Pin_1);
+					if(cnt_blink==PERIOD_BLINK/2) GPIO_ResetBits(GPIOA, BLINK_CNTRL_PIN);
 					
 					if(cnt_blink==PERIOD_BLINK) cnt_blink = 0;
 					cnt_blink++;
@@ -304,8 +329,6 @@ __enable_irq();
 						SD_Write_Data_Info_Sector0();
 					}		
 					
-					Cycle_UART_tx((uint8_t*)ptr_buf_transm, 4000/*SizeByte*/);
-					
 					num_block_fif0_read++;
 					if(num_block_fif0_read==NUM_BLOCKS_FIFO) num_block_fif0_read = 0;
 					cnt_block_write--;
@@ -313,8 +336,19 @@ __enable_irq();
 					
 					cntr_sd.cnt_status_write = N_block_rec_flash;
 					cntr_sd.cnt_file_sd = cnt_file_write_flash;
-					Cycle_UART_tx((uint8_t*)&cntr_sd, 8);
+					cntr_sd.stat[0] = 3;
+					
+					if(UART_Tr_En){
+						if(cnt_uart_send==0){
+							for(i=0;i<BUF_UART_SIZE;i++) buf_uart[i] = block_fifo_ptr[i];
+						}		
 						
+						for(i=0; i<SIZE_DATA_CDG; i++) cntr_sd.data[i] = buf_uart[cnt_uart_send*SIZE_DATA_CDG+i];
+						
+					  Cycle_UART_tx((uint8_t*)&cntr_sd, 16+SIZE_DATA_CDG*2);	
+						cnt_uart_send++;
+						if(cnt_uart_send*SIZE_DATA_CDG>=BUF_UART_SIZE) cnt_uart_send = 0;
+					}	
 		}
 		else if(((UART_txMode == 0)) && (N_block_rec_flash_tmp != N_block_rec_flash)){ //if stop writing current file
 			
@@ -322,10 +356,17 @@ __enable_irq();
 				SD_Write_Data_Info_Sector0();
 				cnt_block_read = 0;
 			
+				cntr_sd.cnt_status_write = N_block_rec_flash;
+				cntr_sd.cnt_file_sd = cnt_file_write_flash;
+				cntr_sd.stat[0] = 4;
+					
+				if(UART_Tr_En) Cycle_UART_tx((uint8_t*)&cntr_sd, 16+SIZE_DATA_CDG*2);	
+			
 		}
 
-		
+	#ifdef EN_CNTRL_BUTTON	
 		St = ack_cnt_bttn();
+	#endif
 		
 		if(St==1)	New_Conf_byte = START_txUART_ADC;
 		else if(St==2) New_Conf_byte = STOP_txUART_ADC;
@@ -692,30 +733,19 @@ void Obrab_Conf_byte(void){
 		case (TEST_txUART_cnt):
 			UART_txMode = 2;
       break;
-//----------------------
-		case (START_wrSD_ADC):
-			//if(SD_Stat==RES_OK) SD_Mode = 1;
-      break;
-		case (START_rdSD_ADC):
-			//if(SD_Stat==RES_OK) SD_Mode = 2;
-      break;
-		case (STOP_SD):
-			SD_Mode = 0;
-      break;
 		case (RESET_WR_SD):
 			cnt_sector_wr = 0;
-			break;
-		case (RESET_RD_SD):
-			cnt_sector_rd = 0;
 			break;
 		case (Power_SD_On):
 			//SD_PowerOn();
 			//SD_Stat = disk_initialize(0);
       break;	
-		case (Power_SD_Off):
-			//SD_Stat = disk_initialize(0);
-			//SD_PowerOff();
+		case (Conf_Byte_data_On):
+			UART_Tr_En = 1;
 			break;
+		case (Conf_Byte_data_Off):
+			UART_Tr_En = 0;
+			break;		
 		case (WINDOW_MODE_FAST_FD):
 			ADC_triple_dma_stop();
 			WindowMode = 1;
