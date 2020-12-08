@@ -2,7 +2,7 @@
 #define FIFO__H
  
 
-#define size_fifo 256
+#define size_fifo 512
  
 typedef struct _FIFO_T
 {

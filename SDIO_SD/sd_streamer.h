@@ -8,7 +8,7 @@
 #define SD_OPERATION_BLOCK          1
 #define SD_OPERATION_MULTI_BLOCK    2 
 #define SD_OPERATION_END            3
-#define SIZE_DATA_CDG 							32
+#define SIZE_DATA_CDG 							100
 
 typedef struct
 {	

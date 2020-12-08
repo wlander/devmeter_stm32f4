@@ -17,7 +17,7 @@ uint8_t Reset_Data_Button_Catch = 0;
 uint32_t cnt_blink = 0;
 uint16_t cnt_sector = 0;
 
-uint8_t ask_sd_ctr_btn(){
+uint8_t ask_sd_ctr_btn(void){
 	
 	int ii;
 	uint8_t num_btn = 0;
@@ -108,7 +108,7 @@ uint8_t ask_sd_ctr_btn(){
 	
 }
 
-uint8_t ack_cnt_bttn(){
+uint8_t ack_cnt_bttn(void){
 
 	int ii;
 	uint8_t status_btn = 0;

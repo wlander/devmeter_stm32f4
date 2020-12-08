@@ -2,6 +2,7 @@
 #define __ESP_UART_H
 
 #include "stm32f4xx.h"
+#include "sd_streamer.h"
 
 #define ESP_UART                        USART3
 #define ESP_UART_CLK                    RCC_APB1Periph_USART3
@@ -19,30 +20,50 @@
 
 #define FINAL_RCV_MSG_CHAR							0x0A
 #define MAX_RCV_MSG											128
+#define TR_MSG_SIZE											(sizeof(cdg_cntrl_sd))
+#define ESP_TR_FIFO_ISFULL							1
+#define ESP_TR_FIFO_ISFREE							0
+#define ESP_UDP_INIT_ERROR							1
 
 #define ESP_USART_BaundRate							115200
 
+#define NUM_DELAY_TR			16
 
 #define ESP_RESP_OK				1
 #define ESP_RESP_ERROR		2
 #define ESP_RESP_INV_TR		3
 #define ESP_RESP_RCV_D		4
 #define ESP_ALRDY_CNNCT		5
-
-
+#define EXT_CONF_BYTE			7
+#define ESP_SEND_OK				8
 
 uint8_t init_esp_uart(void);
 uint8_t get_uart_msg(char*);
 void clear_fifo_esp(void);
-void esp_uart_tr(uint8_t *d_src, uint32_t size_d);
-uint8_t parse_esp_uart_msg(char* msg);
+void esp_uart_tr(uint8_t*, uint32_t);
+uint8_t parse_esp_uart_msg(char*);
 
 uint8_t esp_udp_connect(void);
+uint8_t esp_udp_disconnect(void);
 uint8_t esp_ask_ok(void);
 uint8_t esp_start_uart_tr(void);
+uint8_t esp_start_uart_tr2(void);
 uint8_t esp_rst(void);
+uint8_t esp_set_ate0(void);
+uint8_t esp_init_udp(void);
+void clear_fifo_esp(void);
+void clear_fifo_esp_tr(void);
+uint8_t esp_uart_msg_tr_start(uint8_t *d_src, uint32_t size_d);
+uint8_t esp_uart_msg_tr_continue(void);
+uint8_t esp_msg_tr_status(void);
 
+uint8_t put_esp_uart_fifo_tr(uint8_t*, uint32_t);
+uint8_t esp_uart_msg_tr(void);
+uint8_t esp_check_rcv_msg(void);
 //unit test
 uint8_t esp_unit_test1(void);
+
+//#define UNIT_TEST1
+//#define UNIT_TEST2
 
 #endif

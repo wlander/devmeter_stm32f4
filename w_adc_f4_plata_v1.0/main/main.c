@@ -11,6 +11,7 @@
 #include "conf_init.h"
 #include "stm32f4_discovery_sdio_sd.h"
 #include  "sd_stream_cntrl.h"
+#include "esp_uart.h"
 
 //#include "sdio_sd.h"
 //#include "diskio.h"
@@ -52,6 +53,7 @@ uint16_t* ptr_buf_obr = ADC_buf2;
 uint32_t cnt_recv = 0;
 uint32_t cnt_obr = 0;
 uint8_t f_adc_complete = 0;
+uint8_t cnt_delay_tr = 0;
 
 uint8_t ADC_Fd = SPS_ADC_DEFAULT;
 
@@ -195,30 +197,7 @@ void USART1_IRQHandler(void){
 int main(){
 uint32_t i = 0;	
 uint8_t St = 0;		
-uint16_t* ptmp;	
-uint32_t* ptr_h2;		
-uint16_t* ptr_tmp;
 
-//----- TEST PACK ADC DATA---------------------------------------------------------
-/*
-for(i=0;i<2048;i++) buf1[i] = ((i)<<2);
-	
-pack10_adc_data_2ch(buf1,	tmp_buf);	
-unpack10_adc_data_2ch((uint8_t*)tmp_buf, buf2);	
-
-for(i=0;i<2048;i++) buf1[i] = (buf1[i]>>2);
-*/
-//------------ Test SDIO ----------------------------------------------
-//DS = disk_initialize (0);
-//---------------------------------------------------------------------		
-/*
-while(1){
- for(i=0;i<100000;i++){
-  
- }
- k++;
-}	
-*/	
 //--------------------------------------------------------------------	
 	
 /*******************************************************************/
@@ -234,32 +213,101 @@ NVIC_Configuration();
 
 //SizeByte = 	(BUF_ADC_LEN_CH/K_DECIM_DEF*2*2*8)/10; //BUF_ADC_LEN_CH*Num_Ch/K_DECIM_DEF*2;
 
-USART1_init((uint32_t*)ptr_buf_transm, SizeByte);
+#ifdef UNIT_TEST1
+	esp_unit_test1();
+	//while(1);
+#endif	
+	
+	
+#ifdef ESP_EN
+	St = init_esp_uart();
+#else
+	USART1_init((uint32_t*)ptr_buf_transm, SizeByte);
+#endif
+
 //USART1_dma_init((uint32_t*)ptr_buf_transm, SizeByte);
 
 __enable_irq();
 
 
-#ifdef TEST_ESP
-
-	esp_unit_test1();
-
-#endif
-
-
-
 //Set_ADC_SampleTime(ADC_Fd);		
 //ADC_triple_dma_run();		
-
-//while(1){};
 	
 //------------ END INIT ----------------------------------------------
  St = 0;
+ 
+#ifdef ESP_EN
+	St = esp_init_udp();
+	
+	if(St==ESP_UDP_INIT_ERROR){
+		//send info to PC about it
+		St = St;
+	}
+	
+#endif
+
+#ifdef UNIT_TEST2 
+
+N_block_rec_flash = 0;
+cnt_file_write_flash = 1;
+	
+clear_fifo_esp();
+	
+ while(1){
+	 
+ 		if((UART_txMode > 0)){	
+			
+			cntr_sd.cnt_status_write = N_block_rec_flash;
+			cntr_sd.cnt_file_sd = cnt_file_write_flash;
+			cntr_sd.stat[0] = 3;
+			for(i=0; i<SIZE_DATA_CDG; i++) cntr_sd.data[i] = i*N_block_rec_flash;
+			
+			//St = put_esp_uart_fifo_tr((uint8_t*)&cntr_sd, 16+SIZE_DATA_CDG*2);
+			//if(St!=ESP_TR_FIFO_ISFULL) 
+			
+		  if(cnt_uart_send*SIZE_DATA_CDG>=BUF_UART_SIZE) cnt_uart_send = 0;
+/*			
+			//esp_uart_msg_tr();
+			if(esp_msg_tr_status()!=0){
+						esp_uart_msg_tr_continue();
+			}
+			else{
+				St = esp_uart_msg_tr_start((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+				
+				if(St==1) cnt_uart_send++;
+			}
+*/
+			esp_uart_msg_tr_start((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+			//while(esp_uart_msg_tr_continue()!=0) esp_check_rcv_msg();
+
+			N_block_rec_flash++;		
+		
+		}
+
+		St = esp_check_rcv_msg();		
+		esp_uart_msg_tr_continue();
+		
+		if(St!=0) New_Conf_byte = St; 
+
+		if(St==1)	New_Conf_byte = START_txUART_ADC;
+		else if(St==2) New_Conf_byte = STOP_txUART_ADC;
+		
+		if(New_Conf_byte!=Conf_byte) Obrab_Conf_byte();
+		
+		for(i=0;i<10000000;i++){i=i;}	
+ }
+#endif
+ 
  
  while(1){ //waiting start command after reset device - "start write sd" or "reset data sd"
 
 #ifdef EN_CNTRL_BUTTON	
 		St = ask_sd_ctr_btn(); //ask button start or reset
+#endif
+
+#ifdef ESP_EN	 
+		St = esp_check_rcv_msg();
+		if(St!=0) New_Conf_byte = St; 
 #endif
 	 
 		if((New_Conf_byte!=Conf_byte) && (St==0)){ //ask uart0 start or reset
@@ -291,7 +339,18 @@ __enable_irq();
 			cntr_sd.cnt_status_write = N_block_rec_flash;
 			cntr_sd.cnt_file_sd = cnt_file_write_flash;	
 			cntr_sd.stat[0] = 1;		
-			if(UART_Tr_En) Cycle_UART_tx((uint8_t*)&cntr_sd, 16+SIZE_DATA_CDG*2);		
+			if(UART_Tr_En){
+				
+				#ifdef ESP_EN
+					//create task data transmit for esp;
+					//St = put_esp_uart_fifo_tr((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+				  St = esp_uart_msg_tr_start((uint8_t*)&cntr_sd, 16);
+					while(esp_uart_msg_tr_continue()!=0) esp_check_rcv_msg();
+				
+				#else
+					Cycle_UART_tx((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+				#endif
+			}
 	
 	}
 	
@@ -308,8 +367,18 @@ __enable_irq();
 				
 					cntr_sd.cnt_status_write = N_block_rec_flash;
 					cntr_sd.cnt_file_sd = cnt_file_write_flash;
-					cntr_sd.stat[0] = 2;					
-					if(UART_Tr_En) Cycle_UART_tx((uint8_t*)&cntr_sd, 16+SIZE_DATA_CDG*2);					
+					cntr_sd.stat[0] = 2;	
+				
+					if(UART_Tr_En){
+						#ifdef ESP_EN
+							//create task data transmit for esp;
+							//St = put_esp_uart_fifo_tr((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+								esp_uart_msg_tr_start((uint8_t*)&cntr_sd, 16);
+								//St = esp_uart_msg_tr_((uint8_t*)&cntr_sd, 16);
+						#else
+							Cycle_UART_tx((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+						#endif					
+					}
 			}		
 			
 			if(((UART_txMode > 0)) && (cnt_block_write != 0)){	
@@ -345,8 +414,21 @@ __enable_irq();
 						
 						for(i=0; i<SIZE_DATA_CDG; i++) cntr_sd.data[i] = buf_uart[cnt_uart_send*SIZE_DATA_CDG+i];
 						
-					  Cycle_UART_tx((uint8_t*)&cntr_sd, 16+SIZE_DATA_CDG*2);	
-						cnt_uart_send++;
+						#ifdef ESP_EN
+							//create task data transmit for esp;
+							//St = put_esp_uart_fifo_tr((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+						  if(esp_msg_tr_status()==0){
+								if(cnt_delay_tr==0)	St = esp_uart_msg_tr_start((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+								cnt_delay_tr++;
+								if(cnt_delay_tr==NUM_DELAY_TR) cnt_delay_tr=0;
+							}
+
+						#else
+							Cycle_UART_tx((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+							cnt_uart_send++;
+						#endif	
+						
+
 						if(cnt_uart_send*SIZE_DATA_CDG>=BUF_UART_SIZE) cnt_uart_send = 0;
 					}	
 		}
@@ -360,12 +442,29 @@ __enable_irq();
 				cntr_sd.cnt_file_sd = cnt_file_write_flash;
 				cntr_sd.stat[0] = 4;
 					
-				if(UART_Tr_En) Cycle_UART_tx((uint8_t*)&cntr_sd, 16+SIZE_DATA_CDG*2);	
+				if(UART_Tr_En){
+						#ifdef ESP_EN
+							//create task data transmit for esp;
+							//St = put_esp_uart_fifo_tr((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+							esp_uart_msg_tr_start((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+							cnt_delay_tr = 0;
+						#else
+							Cycle_UART_tx((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+						#endif					
+				}
 			
 		}
 
 	#ifdef EN_CNTRL_BUTTON	
 		St = ack_cnt_bttn();
+	#endif
+
+	#ifdef ESP_EN
+//		esp_uart_msg_tr();
+		St = esp_check_rcv_msg();		
+		esp_uart_msg_tr_continue();
+
+		if(St!=0) New_Conf_byte = St; 
 	#endif
 		
 		if(St==1)	New_Conf_byte = START_txUART_ADC;
@@ -561,68 +660,17 @@ void pack8_adc_data_2ch(uint16_t* ptr_adc_data, uint8_t* ptr_out){
 }
 
 void pack16_adc_data_2ch(uint16_t* ptr_adc_data, uint8_t* ptr_out){
-	uint32_t i,j;
+	uint32_t i;
 	uint16_t ish = 0;
 	uint16_t sample1;
 	uint16_t sample2;
 	uint16_t sample_out;	
 	uint8_t* ptr_s = (uint8_t*)&sample_out;
-/*	
-	for(j=0;j<30;j++){
-		ptr_adc_data[500*2+j*2+1] = 500;	
-		ptr_adc_data[1000*2+j*2+1] = 500;	
-		ptr_adc_data[1500*2+j*2+1] = 500;		
-	}	
-*/
-/*	
-	ish = 500;
-	ptr_adc_data[ish*2+0*2+1] = 500;
-	ptr_adc_data[ish*2+1*2+1] = 600;
-	ptr_adc_data[ish*2+2*2+1] = 550;
-	ptr_adc_data[ish*2+3*2+1] = 650;
-	ptr_adc_data[ish*2+4*2+1] = 750;
-	ptr_adc_data[ish*2+5*2+1] = 550;
-	ptr_adc_data[ish*2+6*2+1] = 770;
-	ptr_adc_data[ish*2+7*2+1] = 700;
-	ptr_adc_data[ish*2+8*2+1] = 630;
-	ptr_adc_data[ish*2+9*2+1] = 450;
-	ptr_adc_data[ish*2+10*2+1] = 650;	
-	ptr_adc_data[ish*2+11*2+1] = 350;	
-	
-	
-	ish = 1000;
-	ptr_adc_data[ish*2+0*2+1] = 500;
-	ptr_adc_data[ish*2+1*2+1] = 600;
-	ptr_adc_data[ish*2+2*2+1] = 550;
-	ptr_adc_data[ish*2+3*2+1] = 650;
-	ptr_adc_data[ish*2+4*2+1] = 750;
-	ptr_adc_data[ish*2+5*2+1] = 550;
-	ptr_adc_data[ish*2+6*2+1] = 770;
-	ptr_adc_data[ish*2+7*2+1] = 700;
-	ptr_adc_data[ish*2+8*2+1] = 630;
-	ptr_adc_data[ish*2+9*2+1] = 450;
-	ptr_adc_data[ish*2+10*2+1] = 650;	
-	ptr_adc_data[ish*2+11*2+1] = 350;	
 
-	ish = 1500;
-	ptr_adc_data[ish*2+0*2+1] = 500;
-	ptr_adc_data[ish*2+1*2+1] = 600;
-	ptr_adc_data[ish*2+2*2+1] = 550;
-	ptr_adc_data[ish*2+3*2+1] = 650;
-	ptr_adc_data[ish*2+4*2+1] = 750;
-	ptr_adc_data[ish*2+5*2+1] = 550;
-	ptr_adc_data[ish*2+6*2+1] = 770;
-	ptr_adc_data[ish*2+7*2+1] = 700;
-	ptr_adc_data[ish*2+8*2+1] = 630;
-	ptr_adc_data[ish*2+9*2+1] = 450;
-	ptr_adc_data[ish*2+10*2+1] = 650;	
-	ptr_adc_data[ish*2+11*2+1] = 350;	
-*/
 	
 	for(i=0;i<BUF_ADC_LEN_CH/K_DECIM_DEF;i++){	
 			
 //		ptr_adc_data[i*2+0] = ish;
-
 		
 		sample1 = (ptr_adc_data[i*2+0]>>2); //delete two first bit channel 1
 		sample2 = (ptr_adc_data[i*2+1]<<5); //delete one last bit channel 2
@@ -640,18 +688,6 @@ void pack16_adc_data_2ch(uint16_t* ptr_adc_data, uint8_t* ptr_out){
 		
 	}	
 	
-/*	
-#ifndef H1
-	
-	ADER_TYPE2
-	for(i=0;i<BUF_ADC_LEN_CH/K_DECIM_DEF-1;i++){
-		if((ptr_out[i] = 0xFE) && (ptr_out[i+1] = 0xFE)){
-			if((i%2)==0) ptr_out[i+1] = 0xFD;
-			else ptr_out[i] = 0xFD;
-		}
-	}
-#endif
-*/	
 }
 
 void unpack10_adc_data_2ch(uint8_t* ptr_in, uint16_t* ptr_out){
@@ -690,11 +726,7 @@ void unpack10_adc_data_2ch(uint8_t* ptr_in, uint16_t* ptr_out){
 		ptr_unpack[i*8+6] = ptr_in[i*5+4];		
 		
 	}	
-/*	
-	for(i=0;i<(BUF_ADC_LEN_CH/K_DECIM_DEF*2)/8;i++){
-		ptr_out[i] = (ptr_out[i]<<2);
-	}
-*/	
+
 }
 
 void exl_header_def(uint8_t* d_src, uint32_t size){

@@ -2,7 +2,8 @@
 #define __ADC_MODULE_DEF_H
 
 //--------- DEFINE for RECV UART bluetooth conf byte -------------------------------
-
+#define ESP_EN
+#define SD_EN
 //--------- DEFINE Conf ADC data (conf byte) ---------------------------------------
 #define START_txUART_ADC	0x31 //bluetooth
 #define STOP_txUART_ADC		0x30
@@ -94,7 +95,7 @@
 //#define SPI_SD_DEBUG
 //----------------------------------------------------------------------------------
 
-#define TEST_ESP
+//#define TEST_ESP
 
 //PS: Calc ADC Sampling: ((((HCLK/2)/APB2 Prescaler)/ADC_Prescaler_Div)/(ADC_SampleTime+12))/K_DECIM_DEF = 0,00426829268292682926829268292683 
 
