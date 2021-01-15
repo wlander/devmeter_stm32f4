@@ -19,6 +19,8 @@
 #define ESP_UART_IRQ_Handler            USART3_IRQHandler
 
 #define FINAL_RCV_MSG_CHAR							0x0A
+#define ASK_OK													0x39
+#define RECV_DATA												94
 #define MAX_RCV_MSG											128
 #define TR_MSG_SIZE											(sizeof(cdg_cntrl_sd))
 #define ESP_TR_FIFO_ISFULL							1
@@ -56,6 +58,8 @@ void clear_fifo_esp_tr(void);
 uint8_t esp_uart_msg_tr_start(uint8_t *d_src, uint32_t size_d);
 uint8_t esp_uart_msg_tr_continue(void);
 uint8_t esp_msg_tr_status(void);
+uint8_t get_fl_rcv_data_stat(void);
+void reset_fl_rcv_data_stat(void);
 
 uint8_t put_esp_uart_fifo_tr(uint8_t*, uint32_t);
 uint8_t esp_uart_msg_tr(void);

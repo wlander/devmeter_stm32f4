@@ -8,7 +8,7 @@
 #define SD_OPERATION_BLOCK          1
 #define SD_OPERATION_MULTI_BLOCK    2 
 #define SD_OPERATION_END            3
-#define SIZE_DATA_CDG 							100
+#define SIZE_DATA_CDG 							30
 
 typedef struct
 {	
@@ -23,6 +23,7 @@ typedef struct
 
 void SDIO_SD_Init(void);									// Инициаклизация flash
 uint8_t SDIO_SD_SingleBlock_Rec(uint8_t*, uint16_t);			// Запись одного блока flash
+uint8_t SDIO_SD_TIM_Rec(uint8_t* data);
 void SDIO_SD_ReadBlock(uint8_t*, uint16_t);						// Чтение одного блока flash
 void SD_Write_Data_Info_Sector0(void);
 void SD_Read_Data_Info_Sector0(void);

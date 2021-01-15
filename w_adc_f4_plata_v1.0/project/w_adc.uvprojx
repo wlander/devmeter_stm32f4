@@ -482,6 +482,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\SPL\stm32f4xx_usart.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32f4xx_tim.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\SPL\stm32f4xx_tim.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -543,6 +548,9 @@
               <FilePath>..\..\ESP\esp_uart.c</FilePath>
             </File>
           </Files>
+        </Group>
+        <Group>
+          <GroupName>Timer</GroupName>
         </Group>
       </Groups>
     </Target>

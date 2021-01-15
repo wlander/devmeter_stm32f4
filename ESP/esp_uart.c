@@ -33,11 +33,12 @@ FIFO_T esp_uart_fifo_tr;
 uint8_t Fifo_overflow = 0;
 
 uint32_t cnt_rcv_esp_uart = 0;
-uint32_t cnt_rcv_esp_uart_msg = 0;
+volatile uint32_t cnt_rcv_esp_uart_msg = 0;
 uint32_t cnt_obr_esp_uart_msg = 0;
 uint32_t cnt_send_ok = 0;
 uint32_t size_msg_tr = 0;
 
+volatile uint8_t fl_rcv_data = 0;
 uint8_t task_tr = 0;
 uint8_t tst_flg = 0;
 uint8_t cnt_tstt = 0;
@@ -45,8 +46,12 @@ uint8_t cnt_tstt = 0;
 void ESP_UART_IRQ_Handler(void){
 	uint8_t tmp_b;
 	tmp_b = ESP_UART->DR;
-	
-	if ((FIFO_COUNT(esp_uart_fifo_msg)<FIFO_SIZE(esp_uart_fifo_msg)) && (tmp_b!=0x20) && (tmp_b!=0x0D)){
+
+
+	if(tmp_b==RECV_DATA){
+		fl_rcv_data = 1;
+	}	
+	else if ((FIFO_COUNT(esp_uart_fifo_msg)<FIFO_SIZE(esp_uart_fifo_msg)) && (tmp_b!=0x20) && (tmp_b!=0x0D)){
 
 			FIFO_PUSH( esp_uart_fifo_msg, tmp_b );
 		
@@ -146,6 +151,15 @@ uint8_t esp_init_udp(void){
 	
 	return 0;
 }
+
+uint8_t get_fl_rcv_data_stat(void){
+	return fl_rcv_data;
+}
+
+void reset_fl_rcv_data_stat(void){
+	fl_rcv_data = 0;
+}
+
 
 uint8_t get_uart_msg(char* out_d){
 	uint16_t i = 0;
@@ -366,7 +380,7 @@ uint8_t esp_check_rcv_msg(void){
 		type_resp = parse_esp_uart_msg(recv_msg_buf); //check response of AT command
 		
 		if(type_resp==EXT_CONF_BYTE){ //if msg is not AT command than it is conf byte from control device (PC)
-			return recv_msg_buf[7]; //return conf byte
+			return recv_msg_buf[6]; //return conf byte
 		}
 		
 	}

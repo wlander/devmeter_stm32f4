@@ -7,11 +7,14 @@
 #include "stm32f4xx_sdio.h"
 #include "stm32f4xx_gpio.h"
 #include "stm32f4xx_rcc.h"
+#include "stm32f4xx_tim.h"
 #include "sd_streamer.h"
 
-uint32_t N_block_rec_flash = 0;				// 
+const uint32_t Start_sector_flash = 10000;
+uint32_t N_block_rec_flash = Start_sector_flash;				// 
 uint32_t N_block_read_flash = 0;			// 
 uint32_t N_block_rec_flash_tmp = 0;
+uint32_t Cnt_TIM_Block = 0;
 
 cdg_cntrl_sd cntr_sd;
 
@@ -42,6 +45,7 @@ void SD_Write_Data_Info_Sector0(void)
 	ptr_code_file[0] = 0x7f555555;	
 	ptr_code_file[1] = cnt_file_write_flash;
 	ptr_code_file[2] = N_block_rec_flash;	
+	ptr_code_file[3] = Cnt_TIM_Block;
 	
 	if(Status == SD_OK) 
 	{
@@ -70,12 +74,14 @@ void SD_Read_Data_Info_Sector0(void){
 	if(ptr_code_file[0]==0x7f555555){
 		N_block_rec_flash = ptr_code_file[2];
 		cnt_file_write_flash = ptr_code_file[1];
+		Cnt_TIM_Block = ptr_code_file[3];
 	}
 	else{
-		N_block_rec_flash = 0;
+		N_block_rec_flash = Start_sector_flash;
+		Cnt_TIM_Block = 0;
 	}
 	
-	N_block_read_flash = 0;
+	N_block_read_flash = Start_sector_flash;
 	
 }
 
@@ -141,6 +147,46 @@ uint32_t* ptr_code_file = (uint32_t*)data;
 					}
 					
 			}
+	}
+	
+	return 0;
+		
+}
+
+
+uint8_t SDIO_SD_TIM_Rec(uint8_t* data)
+{
+uint16_t i;
+char Status_Flash = 0;
+uint32_t* ptr_code_file = (uint32_t*)data;
+	
+	if(My_Status_SD==0){
+		
+					Status_Flash = SD_GetCardInfo(&Flash_info);
+					if (Status_Flash != 0)	// 
+					{
+							My_Status_SD = 1;
+							return My_Status_SD;
+					}	
+					else{ 
+																							
+							Status = SD_WriteBlock(data, (512*Cnt_TIM_Block), 512);
+							Status = SD_WaitWriteOperation();
+							while(SD_GetStatus() != SD_TRANSFER_OK);		
+							Cnt_TIM_Block++;
+						
+							if(Status != 0){
+									My_Status_SD = 2;
+									return My_Status_SD;
+							}
+							else if (Cnt_TIM_Block == Flash_info.SD_csd.DeviceSize)			// ???? ?????? ?????????, ?? ????????????? ???????
+							{
+									My_Status_SD = 3;
+									return My_Status_SD;
+							}
+						
+					}
+					
 	}
 	
 	return 0;

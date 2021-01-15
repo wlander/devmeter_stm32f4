@@ -10,6 +10,7 @@
 #include "adc_module_def.h"
 #include "conf_init.h"
 #include "stm32f4_discovery.h"
+#include "stm32f4xx_tim.h"
 //---------------------------------------------------------------
 DMA_InitTypeDef DMA_InitStructure;
 DMA_InitTypeDef DMA_USART_InitStructure;
@@ -63,17 +64,13 @@ void GPIO_init_all(void){
 	 GPIO_PinAFConfig(GPIOB,GPIO_PinSource6,GPIO_AF_USART1);
 	 GPIO_PinAFConfig(GPIOB,GPIO_PinSource7,GPIO_AF_USART1); 
 	 
-//Led Init	 
-  GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_1;
+//Led Init	status led of control button 
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_5;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
   GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-  GPIO_Init(GPIOA, &GPIO_InitStructure);
-	
-	//status led of control button
-	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
-  GPIO_Init(GPIOA, &GPIO_InitStructure);
+  GPIO_Init(GPIOC, &GPIO_InitStructure);
 
 	//control button 1
   GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_6;
@@ -85,6 +82,10 @@ void GPIO_init_all(void){
 	//control button 2	
   GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
   GPIO_Init(GPIOA, &GPIO_InitStructure);	
+
+	//control button sync	
+  GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	GPIO_ResetBits(GPIOA, GPIO_Pin_4);	
 //	GPIO_SetBits(GPIOA, GPIO_Pin_1);	 
@@ -258,6 +259,8 @@ void ADC_triple_dma_run(void){
 	ADC_DMACmd(ADC1, ENABLE);	
 	ADC_SoftwareStartConv(ADC1);
 	
+  TIM_Cmd(TIM2, ENABLE);
+	
 }
 
 void ADC_triple_dma_stop(void){
@@ -268,6 +271,9 @@ void ADC_triple_dma_stop(void){
 		ADC_Cmd(ADC1, DISABLE);
 	  ADC_Cmd(ADC2, DISABLE);
 		ADC_Cmd(ADC3, DISABLE);
+	\
+	  TIM_Cmd(TIM2, DISABLE);
+	  TIM2->CNT = 0;
 }
 
 void USART1_init(uint32_t* addr, uint32_t size){
@@ -361,4 +367,26 @@ void Cycle_UART_tx(uint8_t *d_src, uint32_t size_d){
 	
 }
 
+
+void init_timer(void){
+    TIM_TimeBaseInitTypeDef base_timer;	
+	
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE); // enabling timer clocking
+
+    TIM_TimeBaseStructInit(&base_timer);
+	
+// The divisor is counted as tim_prescaler + 1, so we subtract 1 
+    base_timer.TIM_Prescaler = 42*4 - 1; //250 kHz
+    base_timer.TIM_Period = 0xFFFFFFFF;
+    TIM_TimeBaseInit(TIM2, &base_timer);
+ 
+// We allow an interrupt on updating (in this case - on overflow) the timer counter TIM6.
+ 
+//    TIM_ITConfig(TIM6, TIM_IT_Update, ENABLE);
+//    TIM_Cmd(TIM6, ENABLE);  
+ 
+// Allow processing of an interrupt on counter overflow timer TIM6. the same interrupt also responsible for emptying the DAC.
+
+//    NVIC_EnableIRQ(TIM6_DAC_IRQn);
+}
 

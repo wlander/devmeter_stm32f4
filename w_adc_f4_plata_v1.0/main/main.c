@@ -6,6 +6,7 @@
 #include "stm32f4xx_dma.h"
 #include "stm32f4xx_usart.h"
 #include "stm32f4xx_sdio.h"
+#include "stm32f4xx_tim.h"
 #include "sd_streamer.h"
 #include "adc_module_def.h"
 #include "conf_init.h"
@@ -17,7 +18,7 @@
 //#include "diskio.h"
 
 /*******************************************************************/
-
+void unit_test2(void);
 uint32_t get_time_dwt(void);
 void cycle_buf_time_dwt(void);
 void dwt_cnt_run(void);
@@ -67,6 +68,7 @@ uint16_t Norm_Ch[3]  = {2040,2040,0}; //{2038,2038,2038};
 //--------------- For Send Data ------------------------------------/
 uint16_t buf1[BLOCK_SIZE*NUM_BLOCKS_FIFO+32];  
 uint16_t buf_uart[BUF_UART_SIZE];//[BUF_ADC_LEN_CH*N_CHANNEL_TX/K_DECIM_DEF+32]; 
+
 uint16_t cnt_uart_send = 0;
 
 uint8_t num_block_fif0_write = 0;
@@ -79,6 +81,9 @@ uint8_t block_fifo_status = 0;
 uint16_t tmp_buf[32]; //[BUF_ADC_LEN_CH*N_CHANNEL_TX/K_DECIM_DEF]; 
 
 uint16_t* ptr_buf_transm = buf1;
+
+uint32_t buf_tim[128];
+uint16_t cnt_tim = 0;
 //-------------------------------------------------------------------/
 
 //-------------------------------------------------------------------
@@ -90,7 +95,7 @@ uint32_t cnt_pr_uart = 0;
 uint16_t rd_uart = 0;
 uint32_t cnt_dma_send_usart = 0;
 
-uint16_t Num_Ch = 2;
+uint16_t Num_Ch = 3;
 uint16_t SizeByte = BUF_ADC_LEN_CH/K_DECIM_DEF*2; //BUF_ADC_LEN_CH*N_CHANNEL/K_DECIM_DEF*2;
 //--------------- AD8555 --------------------------------------------
 uint8_t ad8555_rcv_par_buf[2];
@@ -101,6 +106,7 @@ uint8_t f_ad8555_on = 0;
 //-----------------------------------------------------------------------
 
 //------------- SD + SPI ---------------------------------------
+extern const uint32_t Start_sector_flash;
 
 uint8_t SD_Mode = 0;
 uint8_t SD_rdwr_stat = 0;
@@ -129,7 +135,7 @@ uint32_t fault_time_sd_wr = 0;
 #define DWT_CONTROL *(volatile uint32_t *) 0xE0001000
 #define SCB_DEMCR *(volatile uint32_t *) 0xE000EDFC
 
-uint32_t cnt1 = 0;
+uint32_t cnt_tim_sync = 0;
 uint32_t cnt2 = 0;
 uint32_t cnt3 = 0;
 
@@ -143,7 +149,13 @@ void DMA2_Stream0_IRQHandler( void ){
 	ptr_tmp = ptr_buf_recv;
 	ptr_buf_recv = ptr_buf_obr;
 	ptr_buf_obr = ptr_tmp;
-
+	
+if(UART_txMode){
+	
+  cnt_tim_sync = TIM2->CNT;
+	if(cnt_tim<128) buf_tim[cnt_tim] = cnt_tim_sync;
+	cnt_tim++;	
+	
 	if(cnt_block_write<=NUM_BLOCKS_FIFO){
 			decim_adc_data(ptr_buf_obr, block_fifo_ptr+num_block_fif0_write*BLOCK_SIZE, K_Decim, Num_Ch);
 			cnt_block_write++;
@@ -155,7 +167,9 @@ void DMA2_Stream0_IRQHandler( void ){
 	}
 								
 	cnt_recv++;
-	f_adc_complete = 1;	
+	f_adc_complete = 1;
+	
+}
 	adc_recv_end++;
 	
 }
@@ -199,15 +213,13 @@ uint32_t i = 0;
 uint8_t St = 0;		
 
 //--------------------------------------------------------------------	
-	
 /*******************************************************************/
-	
 //----------- INIT ---------------------------------------------------
 	
 RCC_init_all();
 GPIO_init_all();
 SDIO_SD_Init();
-
+init_timer();
 ADC_triple_dma_init((uint32_t*)ADC_buf1, (uint32_t*)ADC_buf2, BUF_ADC_LEN_CH*N_CHANNEL, 1);
 NVIC_Configuration();		
 
@@ -247,59 +259,23 @@ __enable_irq();
 #endif
 
 #ifdef UNIT_TEST2 
-
-N_block_rec_flash = 0;
-cnt_file_write_flash = 1;
-	
-clear_fifo_esp();
-	
- while(1){
-	 
- 		if((UART_txMode > 0)){	
-			
-			cntr_sd.cnt_status_write = N_block_rec_flash;
-			cntr_sd.cnt_file_sd = cnt_file_write_flash;
-			cntr_sd.stat[0] = 3;
-			for(i=0; i<SIZE_DATA_CDG; i++) cntr_sd.data[i] = i*N_block_rec_flash;
-			
-			//St = put_esp_uart_fifo_tr((uint8_t*)&cntr_sd, 16+SIZE_DATA_CDG*2);
-			//if(St!=ESP_TR_FIFO_ISFULL) 
-			
-		  if(cnt_uart_send*SIZE_DATA_CDG>=BUF_UART_SIZE) cnt_uart_send = 0;
-/*			
-			//esp_uart_msg_tr();
-			if(esp_msg_tr_status()!=0){
-						esp_uart_msg_tr_continue();
-			}
-			else{
-				St = esp_uart_msg_tr_start((uint8_t*)&cntr_sd, sizeof(cntr_sd));
-				
-				if(St==1) cnt_uart_send++;
-			}
-*/
-			esp_uart_msg_tr_start((uint8_t*)&cntr_sd, sizeof(cntr_sd));
-			//while(esp_uart_msg_tr_continue()!=0) esp_check_rcv_msg();
-
-			N_block_rec_flash++;		
-		
-		}
-
-		St = esp_check_rcv_msg();		
-		esp_uart_msg_tr_continue();
-		
-		if(St!=0) New_Conf_byte = St; 
-
-		if(St==1)	New_Conf_byte = START_txUART_ADC;
-		else if(St==2) New_Conf_byte = STOP_txUART_ADC;
-		
-		if(New_Conf_byte!=Conf_byte) Obrab_Conf_byte();
-		
-		for(i=0;i<10000000;i++){i=i;}	
- }
+	unit_test2();	
 #endif
  
+ GPIO_SetBits(BLINK_CNTRL_PORT, BLINK_CNTRL_PIN);
+	
+ while(!ask_sync_ctr_btn()){
+	St = St;
+ }	
+	
+ Set_ADC_SampleTime(ADC_Fd);
+ ADC_triple_dma_run(); //start ADC
  
- while(1){ //waiting start command after reset device - "start write sd" or "reset data sd"
+ GPIO_ResetBits(BLINK_CNTRL_PORT, BLINK_CNTRL_PIN);
+ 
+//--------- //waiting start command after reset device - "start write sd" or "reset data sd" ---------------	
+	
+ while(1){ 
 
 #ifdef EN_CNTRL_BUTTON	
 		St = ask_sd_ctr_btn(); //ask button start or reset
@@ -317,7 +293,7 @@ clear_fifo_esp();
 		}
 		
 		if(St==2){ //if reset
-			N_block_rec_flash = 0;
+			N_block_rec_flash = Start_sector_flash;
 			cnt_file_write_flash = 0;		
 			SD_Write_Data_Info_Sector0(); //write reset data information in sd-card sector0
 			fl_start_write_flash = 1;
@@ -330,7 +306,9 @@ clear_fifo_esp();
 		}
 		
 	}
- 
+
+//------------------------------------------------------------------------------------------------
+	
 	St = 0; //reset status control	
 	UART_Tr_En = 1;
 	
@@ -353,13 +331,14 @@ clear_fifo_esp();
 			}
 	
 	}
-	
+
+//--------  main cycle performing ---------------------------------------------------------
+ 	
   while(1){
 	
 			if(f_adc_complete){							
 					f_adc_complete = 0;
-					cnt_obr++;
-					adc_recv_end--;					
+					cnt_obr++;				
 			}
 		
 			if(((UART_txMode > 0)) && (cnt_block_read == 0) && (N_block_rec_flash_tmp == N_block_rec_flash)){	//if starting new file
@@ -373,8 +352,8 @@ clear_fifo_esp();
 						#ifdef ESP_EN
 							//create task data transmit for esp;
 							//St = put_esp_uart_fifo_tr((uint8_t*)&cntr_sd, sizeof(cntr_sd));
-								esp_uart_msg_tr_start((uint8_t*)&cntr_sd, 16);
-								//St = esp_uart_msg_tr_((uint8_t*)&cntr_sd, 16);
+							esp_uart_msg_tr_start((uint8_t*)&cntr_sd, 16);
+							//St = esp_uart_msg_tr_((uint8_t*)&cntr_sd, 16);
 						#else
 							Cycle_UART_tx((uint8_t*)&cntr_sd, sizeof(cntr_sd));
 						#endif					
@@ -383,11 +362,16 @@ clear_fifo_esp();
 			
 			if(((UART_txMode > 0)) && (cnt_block_write != 0)){	
 
-					if(cnt_blink==PERIOD_BLINK) GPIO_SetBits(GPIOA, BLINK_CNTRL_PIN);
+					if(cnt_blink==PERIOD_BLINK) GPIO_SetBits(BLINK_CNTRL_PORT, BLINK_CNTRL_PIN);
 					
+					if(cnt_tim==128){
+						cnt_tim = 0;
+						SDIO_SD_TIM_Rec((uint8_t*)buf_tim);
+					}
+				  
 					St = SDIO_SD_SingleBlock_Rec((uint8_t*)(block_fifo_ptr+num_block_fif0_read*BLOCK_SIZE), NUM_SECTORS_SD_WRITE);		
 					
-					if(cnt_blink==PERIOD_BLINK/2) GPIO_ResetBits(GPIOA, BLINK_CNTRL_PIN);
+					if(cnt_blink==PERIOD_BLINK/2) GPIO_ResetBits(BLINK_CNTRL_PORT, BLINK_CNTRL_PIN);
 					
 					if(cnt_blink==PERIOD_BLINK) cnt_blink = 0;
 					cnt_blink++;
@@ -417,12 +401,18 @@ clear_fifo_esp();
 						#ifdef ESP_EN
 							//create task data transmit for esp;
 							//St = put_esp_uart_fifo_tr((uint8_t*)&cntr_sd, sizeof(cntr_sd));
-						  if(esp_msg_tr_status()==0){
+/*
+							if(esp_msg_tr_status()==0){
 								if(cnt_delay_tr==0)	St = esp_uart_msg_tr_start((uint8_t*)&cntr_sd, sizeof(cntr_sd));
 								cnt_delay_tr++;
 								if(cnt_delay_tr==NUM_DELAY_TR) cnt_delay_tr=0;
 							}
-
+*/
+							if(get_fl_rcv_data_stat() && (!esp_msg_tr_status())){
+									reset_fl_rcv_data_stat();
+									esp_uart_msg_tr_start((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+							}
+						
 						#else
 							Cycle_UART_tx((uint8_t*)&cntr_sd, sizeof(cntr_sd));
 							cnt_uart_send++;
@@ -446,7 +436,7 @@ clear_fifo_esp();
 						#ifdef ESP_EN
 							//create task data transmit for esp;
 							//St = put_esp_uart_fifo_tr((uint8_t*)&cntr_sd, sizeof(cntr_sd));
-							esp_uart_msg_tr_start((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+							esp_uart_msg_tr_start((uint8_t*)&cntr_sd, 16);
 							cnt_delay_tr = 0;
 						#else
 							Cycle_UART_tx((uint8_t*)&cntr_sd, sizeof(cntr_sd));
@@ -478,7 +468,10 @@ clear_fifo_esp();
 
 		//if(cnt_globe_cycle>1000) 	UART_txMode = 1;
   }
-}
+
+//-------------------------------------------------------------------------------	
+	
+}//end main
  
 /*******************************************************************/
 
@@ -744,22 +737,21 @@ void Obrab_Conf_byte(void){
 //----------------------		
     case(STOP_txUART_ADC) :
 			UART_txMode = 0;
-			ADC_triple_dma_stop();
+//			ADC_triple_dma_stop();
       break;
     case (START_txUART_ADC):
 			
 			if(WindowMode==0)	UART_txMode = 1;
 			else UART_txMode = 3; //perevodim okonny rejim fast Fd
 		
-			adc_recv_end = 0;
 			adc_recv_f = 0;
 		
 			ptr_buf_recv = ADC_buf1;
 			ptr_buf_obr = ADC_buf2;
 		
 	//		ADC_triple_dma_init((uint32_t*)ptr_buf_recv, BUF_ADC_LEN_CH*N_CHANNEL, WindowMode);
-			Set_ADC_SampleTime(ADC_Fd);
-			ADC_triple_dma_run(); //start ADC
+//			Set_ADC_SampleTime(ADC_Fd);
+//			ADC_triple_dma_run(); //start ADC
 			
       break;
 		case (TEST_txUART_cnt):
@@ -843,3 +835,74 @@ void cycle_buf_time_dwt(void){
 	if(dwt_buf_c == LEN_DWT_BUF) dwt_buf_c = 0;
 	//return time_dwt;
 }
+
+
+void unit_test2(void){
+	int i = 0;
+	int St = 0;
+	
+N_block_rec_flash = Start_sector_flash;
+cnt_file_write_flash = 1;
+	
+clear_fifo_esp();
+	
+ while(1){
+	 
+ 		if((UART_txMode > 0)){	
+			
+			cntr_sd.cnt_status_write = N_block_rec_flash;
+			cntr_sd.cnt_file_sd = cnt_file_write_flash;
+			cntr_sd.stat[0] = 3;
+			for(i=0; i<SIZE_DATA_CDG; i++) cntr_sd.data[i] = i*N_block_rec_flash;
+			
+			//St = put_esp_uart_fifo_tr((uint8_t*)&cntr_sd, 16+SIZE_DATA_CDG*2);
+			//if(St!=ESP_TR_FIFO_ISFULL) 
+			
+		  if(cnt_uart_send*SIZE_DATA_CDG>=BUF_UART_SIZE) cnt_uart_send = 0;
+/*			
+			//esp_uart_msg_tr();
+			if(esp_msg_tr_status()!=0){
+						esp_uart_msg_tr_continue();
+			}
+			else{
+				St = esp_uart_msg_tr_start((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+				
+				if(St==1) cnt_uart_send++;
+			}
+*/
+			//esp_uart_msg_tr_start((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+			//while(esp_uart_msg_tr_continue()!=0) esp_check_rcv_msg();
+
+			if(get_fl_rcv_data_stat() && (!esp_msg_tr_status())){
+					reset_fl_rcv_data_stat();
+					esp_uart_msg_tr_start((uint8_t*)&cntr_sd, sizeof(cntr_sd));
+			}
+
+
+			N_block_rec_flash++;		
+		
+		}
+
+		St = esp_check_rcv_msg();		
+		esp_uart_msg_tr_continue();
+		
+		if(St!=0){
+			New_Conf_byte = St; 
+		}
+			
+		if(St==1)	New_Conf_byte = START_txUART_ADC;
+		else if(St==2) New_Conf_byte = STOP_txUART_ADC;
+		
+		if(St==ASK_OK){
+			cntr_sd.cnt_status_write = N_block_rec_flash;
+			cntr_sd.cnt_file_sd = cnt_file_write_flash;
+			cntr_sd.stat[0] = 5;
+			esp_uart_msg_tr_start((uint8_t*)&cntr_sd, 16);
+		}
+		
+		if(New_Conf_byte!=Conf_byte) Obrab_Conf_byte();
+		
+		for(i=0;i<10000000;i++){i=i;}	
+ }
+ 
+}//end unit_test2

@@ -2,7 +2,7 @@
 #define __ADC_MODULE_DEF_H
 
 //--------- DEFINE for RECV UART bluetooth conf byte -------------------------------
-#define ESP_EN
+//#define ESP_EN
 #define SD_EN
 //--------- DEFINE Conf ADC data (conf byte) ---------------------------------------
 #define START_txUART_ADC	0x31 //bluetooth
@@ -52,7 +52,7 @@
 #define BUF_ADC_LEN_CH	6144 //The Size of Buffer Full. BUF_ADC_LEN/2 - this is size buf for double bufferization
 #define K_DECIM_DEF			6 //The Size of Buffer Full. BUF_ADC_LEN/2 - this is size buf for double bufferization 
 #define N_CHANNEL  			3 
-#define N_CHANNEL_TX		2 
+#define N_CHANNEL_TX		3 
 //----------------------------------------------------------------------------------
 /*
 #define ADC_CH1	ADC_Channel_11  //10
@@ -86,11 +86,10 @@
 
 #define  HEADER_TYPE2		
 
-
 #define BLOCK_SIZE 						(BUF_ADC_LEN_CH*N_CHANNEL_TX/K_DECIM_DEF)
 #define NUM_SECTORS_SD_WRITE 	((BLOCK_SIZE*2)/512)
-#define NUM_BLOCKS_FIFO 		10
-#define BUF_UART_SIZE				2000 //(int16)
+#define NUM_BLOCKS_FIFO 		4
+#define BUF_UART_SIZE				(1000*N_CHANNEL_TX) //(int16)
 //------------- CODE DEBUG DEF -----------------------------------------------------
 //#define SPI_SD_DEBUG
 //----------------------------------------------------------------------------------
