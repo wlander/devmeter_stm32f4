@@ -363,8 +363,8 @@
             <uSurpInc>0</uSurpInc>
             <uC99>0</uC99>
             <useXO>0</useXO>
-            <v6Lang>1</v6Lang>
-            <v6LangP>1</v6LangP>
+            <v6Lang>0</v6Lang>
+            <v6LangP>0</v6LangP>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F4XX</Define>
@@ -538,11 +538,6 @@
           <GroupName>ESP</GroupName>
           <Files>
             <File>
-              <FileName>esp_lib.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\ESP\esp_lib.c</FilePath>
-            </File>
-            <File>
               <FileName>esp_uart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\ESP\esp_uart.c</FilePath>
@@ -551,6 +546,21 @@
         </Group>
         <Group>
           <GroupName>Timer</GroupName>
+        </Group>
+        <Group>
+          <GroupName>Proc</GroupName>
+          <Files>
+            <File>
+              <FileName>proc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\main\proc.c</FilePath>
+            </File>
+            <File>
+              <FileName>proc.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\main\proc.h</FilePath>
+            </File>
+          </Files>
         </Group>
       </Groups>
     </Target>

@@ -22,7 +22,7 @@
 #define ASK_OK													0x39
 #define RECV_DATA												94
 #define MAX_RCV_MSG											128
-#define TR_MSG_SIZE											(sizeof(cdg_cntrl_sd))
+#define TR_MSG_SIZE											(sizeof(cdg_control_sd))
 #define ESP_TR_FIFO_ISFULL							1
 #define ESP_TR_FIFO_ISFREE							0
 #define ESP_UDP_INIT_ERROR							1

@@ -1,3 +1,20 @@
+/********************************************************************************
+			
+  * @file    proc.c
+  * @author  Evgeny Suskov. 
+  * @version V1.1.1
+  * @date    10-11-2020
+  * @brief   This file implements board initialization functions for ADC, UART, GPIO, DMA: 
+   
+	
+  *  COPYRIGHT (C) 2011 - 2021, Evgeny Suskov, Dmitry Kudryashov. 
+  *  This program is free software; you can redistribute it and/or modify
+  *  it under the terms of the GNU General Public License GPLv3+ as published by
+  *  the Free Software Foundation.
+  * software distributed under the License is distributed on an "AS IS" BASIS, 
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied
+*****************************************************************************/
+
 //--------------------------------------------------------------
 #include "stm32f4xx.h"
 #include "stm32f4xx_rcc.h"

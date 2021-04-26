@@ -1,10 +1,28 @@
+/********************************************************************************
+			
+  * @file    proc.c
+  * @author  Evgeny Suskov
+  * @version V1.1.1
+  * @date    10-11-2020
+  * @brief   This file implements the following functions: 
+  *           + Initialization ESP8266 for UDP profile
+  *           + functions for transmit and receive
+  *     
+	
+  *  COPYRIGHT (C) 2011 - 2021, Evgeny Suskov, Dmitry Kudryashov.
+  *  This program is free software; you can redistribute it and/or modify
+  *  it under the terms of the GNU General Public License GPLv3+ as published by
+  *  the Free Software Foundation.
+  * software distributed under the License is distributed on an "AS IS" BASIS, 
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied
+*****************************************************************************/
+
 #include "stm32f4xx.h"
 #include "stm32f4xx_rcc.h"
 #include "stm32f4xx_gpio.h"
 #include "stm32f4xx_dma.h"
 #include "stm32f4xx_usart.h"
 #include "esp_uart.h"
-#include "esp_lib.h"
 #include "fifo_o.h"
 
 //AT strings for request to ESP
@@ -127,7 +145,7 @@ uint8_t esp_init_udp(void){
 	
 	type_resp = parse_esp_uart_msg(recv_msg_buf);
 	
-	if(type_resp==ESP_RESP_ERROR) return 1; //if pesponse "ERROR"
+	if(type_resp==ESP_RESP_ERROR) return 1; //if response "ERROR"
 
 	//Set ATE0	
 	esp_set_ate0();
