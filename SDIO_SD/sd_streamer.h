@@ -23,7 +23,7 @@ typedef struct
 	
   uint8_t fl_start_write_flash; //The flag is showing that the start write flash button was pressing and must be reset after checking! 
   uint32_t cnt_file_write_flash; //The counter is showing how many files is writing or how many times the start write flash button was pressing
-
+	
 }control_sd;
 
 

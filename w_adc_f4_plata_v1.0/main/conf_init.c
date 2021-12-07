@@ -29,8 +29,8 @@
 #include "stm32f4_discovery.h"
 #include "stm32f4xx_tim.h"
 //---------------------------------------------------------------
-DMA_InitTypeDef DMA_InitStructure;
-DMA_InitTypeDef DMA_USART_InitStructure;
+static DMA_InitTypeDef DMA_InitStructure;
+static DMA_InitTypeDef DMA_USART_InitStructure;
 //======================= RCC INIT =====================================================================
 
 void RCC_init_all(void){

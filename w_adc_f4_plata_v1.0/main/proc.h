@@ -13,7 +13,8 @@ typedef struct
 	uint8_t Pack_Mode; 								//flag for pack mode of data
 	uint8_t Pack_Mode_Ch;							//type for pack mode of data
 	uint8_t WindowMode; 							//type of capture mode
-
+	uint8_t En_SD;
+	
 	uint8_t Conf_byte;								//received configuration byte from UART
   uint8_t New_Conf_byte;
   uint32_t cnt_rcv_usart1;
@@ -57,7 +58,7 @@ typedef struct
   uint8_t block_fifo_status;	
   uint16_t cnt_tim;		
   uint32_t cnt_tim_sync;
-
+	
 	
 //--------------- For Send Data ------------------------------------/
   uint16_t buf1[BLOCK_SIZE*NUM_BLOCKS_FIFO+32]; //processed data of ADC 

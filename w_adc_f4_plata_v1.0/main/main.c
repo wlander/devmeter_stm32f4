@@ -14,14 +14,17 @@
 #include  "sd_stream_cntrl.h"
 #include "esp_uart.h"
 #include "proc.h"
-
-
+#include "Encoder.h"
+#include "app.h"
 //================ MAIN ==================================================================================================
 
 int main(){
 uint8_t cc = 0;
 	
 init_proc();
+Encoder_Init();
+
+USB_VCP_Init();
 	
 //unit_test1();
 //unit_test2();

@@ -39,10 +39,10 @@
 #include "esp_uart.h"
 #include "proc.h"
 
-control_p cntrl_p;
-adc_data_control adc_data_cntrl;
-data_control data_cntrl;
-debug_control dbg_cntrl;
+static control_p cntrl_p;
+static adc_data_control adc_data_cntrl;
+static data_control data_cntrl;
+static debug_control dbg_cntrl;
 
 
 void DMA2_Stream0_IRQHandler( void ){
@@ -113,9 +113,13 @@ void init_proc(void){
 	adc_data_cntrl.ADC_Fd = SPS_ADC_DEFAULT;
 	
 	data_cntrl.block_fifo_ptr = data_cntrl.buf1;
+	
+	cntrl_p.En_SD = 1;
 //--------------------------------------------------------------------	
 	
 //----------- INIT ---------------------------------------------------
+	//SystemInit();				//init clock distribution 
+	
   RCC_init_all();
   GPIO_init_all();
   SDIO_SD_Init();
@@ -175,12 +179,12 @@ uint8_t wait_command_init(){
 		if(St==2){ //if reset
 			cntrl_sd.N_block_rec_flash = START_SECTOR_FLASH;
 			cntrl_sd.cnt_file_write_flash = 0;		
-			SD_Write_Data_Info_Sector0(); //write reset data information in sd-card sector0
+			if(cntrl_p.En_SD) SD_Write_Data_Info_Sector0(); //write reset data information in sd-card sector0
 			cntrl_sd.fl_start_write_flash = 1;
 			break;		
 		}	
 		else if(St==1){ //if start 				
-			SD_Read_Data_Info_Sector0();	//read last data information in sd-card sector0
+			if(cntrl_p.En_SD) SD_Read_Data_Info_Sector0();	//read last data information in sd-card sector0
 			cntrl_sd.fl_start_write_flash = 1;
 			break;		
 		}
@@ -240,10 +244,10 @@ uint8_t proc(){
 					
 					if(data_cntrl.cnt_tim==128){
 						data_cntrl.cnt_tim = 0;
-						SDIO_SD_TIM_Rec((uint8_t*)data_cntrl.buf_tim);
+						if(cntrl_p.En_SD) SDIO_SD_TIM_Rec((uint8_t*)data_cntrl.buf_tim);
 					}
 				  
-					St = SDIO_SD_SingleBlock_Rec((uint8_t*)(data_cntrl.block_fifo_ptr+data_cntrl.num_block_fif0_read*BLOCK_SIZE), NUM_SECTORS_SD_WRITE);		
+					if(cntrl_p.En_SD) St = SDIO_SD_SingleBlock_Rec((uint8_t*)(data_cntrl.block_fifo_ptr+data_cntrl.num_block_fif0_read*BLOCK_SIZE), NUM_SECTORS_SD_WRITE);		
 					
 					if(cnt_blink==PERIOD_BLINK/2) GPIO_ResetBits(BLINK_CNTRL_PORT, BLINK_CNTRL_PIN);
 					
@@ -253,7 +257,7 @@ uint8_t proc(){
 					cnt_sector++;
 					if(cnt_sector==NUM_REFRESH_SD_INFO){
 						cnt_sector = 0;
-						SD_Write_Data_Info_Sector0();
+						if(cntrl_p.En_SD) SD_Write_Data_Info_Sector0();
 					}		
 					
 					data_cntrl.num_block_fif0_read++;
@@ -285,7 +289,7 @@ uint8_t proc(){
 		else if(((cntrl_p.txMode == 0)) && (cntrl_sd.N_block_rec_flash_tmp != cntrl_sd.N_block_rec_flash)){ //if stop writing current file
 			
 				cntrl_sd.N_block_rec_flash_tmp = cntrl_sd.N_block_rec_flash;
-				SD_Write_Data_Info_Sector0();
+				if(cntrl_p.En_SD) SD_Write_Data_Info_Sector0();
 				data_cntrl.cnt_block_read = 0;
 			
 				answer_cntr_sd(4);
@@ -639,7 +643,14 @@ void Obrab_Conf_byte(void){
 			break;
 		case (MODE_PACK_CH2):
 			cntrl_p.Pack_Mode_Ch = 1;
+			break;			
+		case (SD_Rec_Off):
+			cntrl_p.En_SD = 0;
 			break;	
+		case (SD_Rec_On):
+			cntrl_p.En_SD = 1;
+			break;	
+		
 //----------------------    
 		default:
       break;

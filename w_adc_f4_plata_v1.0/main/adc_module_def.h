@@ -17,6 +17,16 @@
 #define  Conf_Byte_data_Off 0x35
 #define  Conf_Byte_sig_On 	0x36
 #define  Conf_Byte_sig_Off 	0x37
+
+#define  SD_Rec_Off 				0x41
+#define  SD_Rec_On	 				0x42
+
+#define  Enc_On	 						0x43
+#define  Enc_Off	 					0x44
+
+#define  USB_On	 						0x45
+#define  USB_Off 						0x46
+
 //----------------------------------------------------------------------------------
 
 #define START_txUSB_ADC		10 //usb

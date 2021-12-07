@@ -84,8 +84,6 @@
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
-            <nStopA1X>0</nStopA1X>
-            <nStopA2X>0</nStopA2X>
           </AfterMake>
           <SelectedForBatchBuild>0</SelectedForBatchBuild>
           <SVCSIdString></SVCSIdString>
@@ -147,6 +145,7 @@
             <RestoreToolbox>1</RestoreToolbox>
             <RestoreTracepoints>1</RestoreTracepoints>
             <RestoreSysVw>1</RestoreSysVw>
+            <UsePdscDebugDescription>1</UsePdscDebugDescription>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
           <TargetSelection>11</TargetSelection>
@@ -363,13 +362,11 @@
             <uSurpInc>0</uSurpInc>
             <uC99>0</uC99>
             <useXO>0</useXO>
-            <v6Lang>0</v6Lang>
-            <v6LangP>0</v6LangP>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F4XX</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Project;..\..\CMSIS;..\..\SPL;..\main;..\..\SDIO_SD;..\..\ESP</IncludePath>
+              <IncludePath>..\Project;..\..\CMSIS;..\..\SPL;..\main;..\..\SDIO_SD;..\..\ESP;..\..\Encoder;..\..\USB\USB_VCP;..\..\USB\STM32_USB_OTG_Driver\src;..\..\USB\STM32_USB_OTG_Driver\inc;..\..\USB\STM32_USB_Device_Library\Class\cdc\src;..\..\USB\STM32_USB_Device_Library\Class\cdc\inc;..\..\USB\STM32_USB_Device_Library\Core\src;..\..\USB\STM32_USB_Device_Library\Core\inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -559,6 +556,81 @@
               <FileName>proc.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\main\proc.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Encoder</GroupName>
+          <Files>
+            <File>
+              <FileName>Encoder.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Encoder\Encoder.c</FilePath>
+            </File>
+            <File>
+              <FileName>Timer_1.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Encoder\Timer_1.c</FilePath>
+            </File>
+            <File>
+              <FileName>Timer_2.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Encoder\Timer_2.c</FilePath>
+            </File>
+            <File>
+              <FileName>Timer_8.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Encoder\Timer_8.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>USB</GroupName>
+          <Files>
+            <File>
+              <FileName>app.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\USB\USB_VCP\app.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_cdc_vcp.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\USB\USB_VCP\usbd_cdc_vcp.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_desc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\USB\USB_VCP\usbd_desc.c</FilePath>
+            </File>
+            <File>
+              <FileName>usb_core.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\USB\STM32_USB_OTG_Driver\src\usb_core.c</FilePath>
+            </File>
+            <File>
+              <FileName>usb_dcd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\USB\STM32_USB_OTG_Driver\src\usb_dcd.c</FilePath>
+            </File>
+            <File>
+              <FileName>usb_dcd_int.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\USB\STM32_USB_OTG_Driver\src\usb_dcd_int.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_core.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\USB\STM32_USB_Device_Library\Core\src\usbd_core.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_ioreq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\USB\STM32_USB_Device_Library\Core\src\usbd_ioreq.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_req.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\USB\STM32_USB_Device_Library\Core\src\usbd_req.c</FilePath>
             </File>
           </Files>
         </Group>

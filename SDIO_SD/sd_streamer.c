@@ -40,7 +40,9 @@ __IO uint32_t SDCardOperation = SD_OPERATION_ERASE;
 
 void SDIO_SD_Init(void)
 {
-  if ((Status = SD_Init()) != SD_OK)	{}
+  if ((Status = SD_Init()) != SD_OK){
+		cntr_sd.stat[1] = 5;
+	}
 		
 	cntrl_sd.N_block_rec_flash = START_SECTOR_FLASH;
 
@@ -66,6 +68,9 @@ void SD_Write_Data_Info_Sector0(void)
 		while(SD_GetStatus() != SD_TRANSFER_OK);
 
 	}
+	else{
+		cntr_sd.stat[1] = 6;
+	}
 	
 }
 
@@ -81,6 +86,9 @@ void SD_Read_Data_Info_Sector0(void){
     Status = SD_WaitReadOperation();
     while(SD_GetStatus() != SD_TRANSFER_OK);
   }
+	else{
+		cntr_sd.stat[1] = 7;
+	}
 	
 	if(ptr_code_file[0]==0x7f555555){
 		cntrl_sd.N_block_rec_flash = ptr_code_file[2];
@@ -106,6 +114,9 @@ void SDIO_SD_ReadBlock(uint8_t* data, uint16_t num_s)
     Status = SD_WaitReadOperation();
     while(SD_GetStatus() != SD_TRANSFER_OK);
   }
+	else{
+		cntr_sd.stat[1] = 8;
+	}
 }
 
 
@@ -159,6 +170,8 @@ uint32_t* ptr_code_file = (uint32_t*)data;
 					
 			}
 	}
+	
+	cntr_sd.stat[1] = My_Status_SD;
 	
 	return 0;
 		
