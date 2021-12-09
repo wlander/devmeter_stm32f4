@@ -409,9 +409,10 @@ static uint16_t VCP_COMConfig(uint8_t Conf)
     USART_InitStructure.USART_Parity = USART_Parity_Odd;
     USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
     USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-    
+    		
     /* Configure and enable the USART */
-    STM_EVAL_COMInit(COM1, &USART_InitStructure);
+    //!!!STM_EVAL_COMInit(COM1, &USART_InitStructure); MUST REPLACE MY OWN FUNCTION
+		USART_Init(USART1, &USART_InitStructure);
     
     /* Enable the USART Receive interrupt */
     USART_ITConfig(EVAL_COM1, USART_IT_RXNE, ENABLE);
@@ -475,7 +476,8 @@ static uint16_t VCP_COMConfig(uint8_t Conf)
     USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
     
     /* Configure and enable the USART */
-    STM_EVAL_COMInit(COM1, &USART_InitStructure);
+    //STM_EVAL_COMInit(COM1, &USART_InitStructure);
+		USART_Init(USART1, &USART_InitStructure);
   }
   return USBD_OK;
 }

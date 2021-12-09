@@ -397,34 +397,20 @@ void Encoder_proc(void){
 	  {
 			if(WIM_task & WIM_MODE_UART)
 			{
-				for(; FIFO_IS_EMPTY( MK_to_Comp_fifo) != 1 ; ) 		USART1_data_output ();
+				enc_uart_out(); //!!!USART1_data_output ();
 			}
 			else if (((WIM_task & WIM_MODE_USB) != 0) || (((WIM_task & WIM_FLASH_TO_COMP) != 0) && ((WIM_task & WIM_MODE_FLASH_WRITE) != 0)))
 			{
 				if (FIFO_COUNT(MK_to_Comp_fifo) >= 512)
 				{
-					OUT_DataTx_USB ();
+					enc_usb_out();
 				}
 			}
 			else if (((WIM_task & WIM_MODE_FLASH_WRITE) != 0) && ((WIM_task & WIM_FLASH_TO_COMP) == 0))
 			{
 				if (FIFO_COUNT(MK_to_Comp_fifo) >= 512)
 				{
-					
-					// Write flash
-					//if(cnt_blink==PERIOD_BLINK) SETBIT(GPIOA->ODR, 1);
-					SDIO_SD_SingleBlock_Rec ();			// ?????? ?????? ????? flash
-					//if(cnt_blink==PERIOD_BLINK/2) CLEARBIT(GPIOA->ODR, 1);
-					
-					//if(cnt_blink==PERIOD_BLINK) cnt_blink = 0;
-					//cnt_blink++;
-					
-					cnt_sector++;
-					if(cnt_sector==NUM_REFRESH_SD_INFO){
-						cnt_sector = 0;
-						SD_Write_Data_Info_Sector0();
-					}
-					
+					enc_sd_out();					
 				}
 			}
 		}
@@ -461,11 +447,12 @@ void Encoder_proc(void){
 				switch(n)
 				{
 					case 0 :		//Send to USB
-						OUT_DataTx_USB_Error ();
+						//OUT_DataTx_USB_Error ();
+						for(; FIFO_IS_EMPTY( Error_fifo) != 1 ; ){} 
 					break;
 
 					case 1 :		//Send to UART
-						for(; FIFO_IS_EMPTY( Error_fifo) != 1 ; ) 		USART1_data_output_Error ();
+						for(; FIFO_IS_EMPTY( Error_fifo) != 1 ; ){} 		//USART1_data_output_Error ();
 					break;
 					default : ;
 				}
@@ -477,35 +464,62 @@ void Encoder_proc(void){
     //Castm isn't recieved?
     if(WIM_task & WIM_INPUT_SETTING)
     {
-      if (Setting_Processor() == 1)
-			{
-				Parcel_analysis();
-			}
+			ask_input_settings();
     }
 		
     //Check flash to PC mode out 
     if(WIM_task & WIM_FLASH_TO_COMP)
 		{
-//		if(cnt_blink==PERIOD_BLINK*2) SETBIT(GPIOA->ODR, 1);
-			SDIO_SD_ReadMultiBlocks();					//send data flash to PC 
-//		if(cnt_blink==PERIOD_BLINK) CLEARBIT(GPIOA->ODR, 1);
-			
-//		if(cnt_blink==PERIOD_BLINK*2) cnt_blink = 0;
-//		cnt_blink++;	
-			
-			//for(ii=0;ii<100000;ii++){ii = ii;}
-			
+			enc_sd_read();
 		}
 		
     //Time has come to erase Flash?
     if(WIM_task & WIM_MODE_FLASH_ERASE)
 		{
 			
-			SDIO_SD_Erase();												
+			enc_sd_clear();								
 		  WIM_task &= ~WIM_MODE_FLASH_ERASE;
 		}
 		
 
 }	
+
+void enc_uart_out(void){
+	for(; FIFO_IS_EMPTY( Error_fifo) != 1 ; ){}
+}
+
+void enc_usb_out(void){
 	
+	//OUT_DataTx_USB ();
+	for(; FIFO_IS_EMPTY( Error_fifo) != 1 ; ){}
+}
+
+void enc_sd_out(void){
+
+	for(; FIFO_IS_EMPTY( Error_fifo) != 1 ; ){}
+/*
+		SDIO_SD_SingleBlock_Rec();
 	
+		cnt_sector++;
+		if(cnt_sector==NUM_REFRESH_SD_INFO){
+				cnt_sector = 0;
+				SD_Write_Data_Info_Sector0();
+		}	
+*/
+	
+}	
+
+void enc_sd_read(void){
+	//SDIO_SD_ReadMultiBlocks();
+}
+
+void enc_sd_clear(void){
+	//SDIO_SD_Erase();		
+}
+
+void ask_input_settings(void){
+	
+	 //if (Setting_Processor() == 1) Parcel_analysis();
+	//!!!We should check FIFO Comp_to_MK that fillingby func usbd_cdc_DataOut() inside usbd_cdc_core.c
+}
+

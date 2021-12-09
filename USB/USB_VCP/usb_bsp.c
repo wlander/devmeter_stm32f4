@@ -50,6 +50,13 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usb_bsp.h"
 #include "usbd_conf.h"
+#include "stm32f4xx.h"
+#include "stm32f4xx_rcc.h"
+#include "stm32f4xx_gpio.h"
+#include "stm32f4xx_adc.h"
+#include "stm32f4xx_dma.h"
+#include "stm32f4xx_usart.h"
+#include "misc.h"
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
 * @{

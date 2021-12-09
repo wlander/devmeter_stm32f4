@@ -618,11 +618,6 @@
               <FilePath>..\..\USB\STM32_USB_OTG_Driver\src\usb_dcd_int.c</FilePath>
             </File>
             <File>
-              <FileName>usbd_core.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\USB\STM32_USB_Device_Library\Core\src\usbd_core.c</FilePath>
-            </File>
-            <File>
               <FileName>usbd_ioreq.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\USB\STM32_USB_Device_Library\Core\src\usbd_ioreq.c</FilePath>
@@ -631,6 +626,26 @@
               <FileName>usbd_req.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\USB\STM32_USB_Device_Library\Core\src\usbd_req.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_cdc_core.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\USB\STM32_USB_Device_Library\Class\cdc\src\usbd_cdc_core.c</FilePath>
+            </File>
+            <File>
+              <FileName>usb_bsp.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\USB\USB_VCP\usb_bsp.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_usr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\USB\USB_VCP\usbd_usr.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_core.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\USB\STM32_USB_Device_Library\Core\src\usbd_core.c</FilePath>
             </File>
           </Files>
         </Group>

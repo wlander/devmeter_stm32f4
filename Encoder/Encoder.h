@@ -17,6 +17,14 @@ void DeInit_All_Timers (void);			// Выключение всех таймеров
 void Led_Init (void);
 void Button_Init (void);
 
+
+void enc_uart_out(void);
+void enc_usb_out(void);
+void enc_sd_out(void);
+void enc_sd_read(void);
+void enc_sd_clear(void);
+void ask_input_settings(void);
+
 #define PIN_ENCODER1 (Pe)
 
 #define ENCODER_INPUT1	GPIO_Pin_9

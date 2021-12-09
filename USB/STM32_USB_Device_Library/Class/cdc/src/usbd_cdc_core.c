@@ -68,9 +68,9 @@
 #include "usbd_desc.h"
 #include "usbd_req.h"
 
-#include "USART.h"
+//#include "USART.h"
 #include "fifo.h"
-#include "gps.h"
+//#include "gps.h"
 
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -699,9 +699,9 @@ static uint8_t  usbd_cdc_DataOut (void *pdev, uint8_t epnum)
 	{
 		if ( !FIFO_IS_FULL( Comp_to_MK_fifo ) )
 		{
-			FIFO_PUSH( Comp_to_MK_fifo, USB_Rx_Buffer [i] );
+			FIFO_PUSH( Comp_to_MK_fifo, USB_Rx_Buffer [i] ); 
 		}
-			processrx_setting(USB_Rx_Buffer [i]);
+			//processrx_setting(USB_Rx_Buffer [i]);
 	}
 	
   return USBD_OK;
@@ -795,39 +795,6 @@ static void Handle_USBAsynchXfer (void *pdev)
   
 }
 
-
-
-/*static void Handle_USBAsynchXfer (void *pdev)
-{
-  int i=0;
-  uint16_t USB_Tx_ptr;
-  uint16_t USB_Tx_length=0;
-		
-//for (i=0; i<512; i++)
-//		{
-//		APP_Rx_Buffer[i]=i;		
-//		}
-
-if(USB_Tx_length_ == 0) 
-  {
-    USB_Tx_State = 0; 
-    return;
-  }
-
-  USB_Tx_State = 1; 
-
-	DCD_EP_Tx (pdev,
-               CDC_IN_EP,
-               (uint8_t*)&APP_Rx_Buffer[0],
-               USB_Tx_length_);
-		
-		
-//    DCD_EP_Tx (pdev,
-//               CDC_IN_EP,
-//               (uint8_t*)&APP_Rx_Buffer[USB_Tx_ptr],
-//               USB_Tx_length);
-  
-}*/
 
 /**
   * @brief  USBD_cdc_GetCfgDesc 
